@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A&amp;IS Week Ahead Performance Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#04132e; --navy2:#0a2348; --ink:#0b1320;
+  --paper:#f6f4ef; --card:#ffffff; --line:#dcd7cc; --grid:#ece8df; --track:#eee9df; --hover:#faf8f3; --tk:#fbf7ec;
+  --accent:#c8a04a; --accent2:#1c6e8c; --teal:#2a8c82; --soft:#7a9aab; --warm:#b9b2a4;
+  --red:#a8432e; --muted:#6b6458; --slate:#3a4756; --serieNavy:#04132e; --onDark:#ffffff;
+  --serif:'Fraunces', Georgia, serif; --sans:'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif; --mono:'IBM Plex Mono', Menlo, Consolas, monospace;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e9edf2; --paper:#070f1d; --card:#0d1a2e; --line:#23324a; --grid:#1a2940; --track:#1a2940; --hover:#12223a; --tk:#16213a;
+    --muted:#a39c8f; --slate:#c3ccd8; --serieNavy:#dfe6ef; --soft:#8fb0c2; --warm:#6f6a60;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e9edf2; --paper:#070f1d; --card:#0d1a2e; --line:#23324a; --grid:#1a2940; --track:#1a2940; --hover:#12223a; --tk:#16213a;
+  --muted:#a39c8f; --slate:#c3ccd8; --serieNavy:#dfe6ef; --soft:#8fb0c2; --warm:#6f6a60;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45}
+.mono{font-family:var(--mono)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 28px}
+
+header{background:var(--navy);color:#fff;padding:34px 0 30px;position:relative;overflow:hidden}
+header::after{content:"";position:absolute;right:-80px;top:-60px;width:340px;height:340px;background:radial-gradient(circle at center, rgba(200,160,74,.22), transparent 62%);pointer-events:none}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+header h1{font-family:var(--serif);font-weight:500;font-size:40px;line-height:1.05;letter-spacing:-.5px;max-width:760px}
+header p.sub{margin-top:14px;color:#b9c4d4;font-size:15px;max-width:680px}
+.accent-rule{width:54px;height:3px;background:var(--accent);margin-top:22px}
+
+.controlbar{background:var(--navy2);color:#fff;border-bottom:1px solid rgba(255,255,255,.1);position:sticky;top:0;z-index:20}
+.controlbar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:22px;padding-top:14px;padding-bottom:14px}
+.fgroup{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.glab{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8ea2bd;font-weight:600}
+.segc{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 11px;border:1px solid rgba(255,255,255,.22);background:transparent;color:#cdd8e6;cursor:pointer;border-radius:2px;transition:.13s;user-select:none}
+.chip:hover{border-color:#fff;color:#fff}
+.chip.on{background:var(--accent);color:#1c1304;border-color:var(--accent);font-weight:500}
+.ctx{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--accent);text-align:right;display:flex;gap:14px;align-items:center}
+.mreset{font-size:11px;color:#8ea2bd;cursor:pointer;text-decoration:underline;text-underline-offset:2px;background:none;border:0;font-family:var(--sans)}
+.mreset:hover{color:#fff}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:20px}
+.kpi{background:var(--card);padding:22px 22px 20px}
+.kpi .label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi .val{font-family:var(--serif);font-size:28px;font-weight:500;margin-top:8px;color:var(--serieNavy);letter-spacing:-.5px}
+.kpi .val.bad{color:var(--red)}
+.kpi .note{font-size:12px;color:var(--slate);margin-top:4px}
+.meter{height:6px;background:var(--track);margin-top:10px;position:relative}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--serieNavy)}
+.meter b{position:absolute;top:-4px;width:2px;height:14px;background:var(--red)}
+
+.tabpane{display:none}.tabpane.on{display:block}
+section{padding:30px 0 6px}
+.secthead{display:flex;align-items:baseline;gap:14px;margin-bottom:18px}
+.secthead .n{font-family:var(--mono);font-size:12px;color:var(--accent);border:1px solid var(--accent);border-radius:2px;padding:2px 7px}
+.secthead h2{font-family:var(--serif);font-weight:500;font-size:23px;color:var(--serieNavy)}
+.grid{display:grid;gap:20px}
+.g2{grid-template-columns:1.6fr 1fr}.g2e{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+.card{background:var(--card);border:1px solid var(--line);padding:22px 24px 24px;position:relative;min-width:0}
+.card h3{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);margin-bottom:3px}
+.card .csub{font-size:12px;color:var(--muted);margin-bottom:16px}
+.chartbox{position:relative;height:300px}
+.chartbox.tall{height:360px}.chartbox.xtall{height:470px}.chartbox.short{height:110px}
+.src{font-size:11px;color:var(--muted);margin-top:12px;font-style:italic}
+
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.pill{font-family:var(--mono);font-size:12px;padding:6px 13px;border:1px solid var(--line);background:var(--card);color:var(--slate);cursor:pointer;border-radius:2px;transition:.15s;user-select:none}
+.pill:hover{border-color:var(--serieNavy);color:var(--serieNavy)}
+.pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+:root[data-theme="dark"] .pill.on{background:var(--accent);color:#1c1304;border-color:var(--accent)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pill.on{background:var(--accent);color:#1c1304;border-color:var(--accent)}}
+select{font-family:var(--mono);font-size:12px;padding:6px 10px;border:1px solid var(--line);background:var(--card);color:var(--slate);border-radius:2px;margin:0 0 14px;max-width:100%}
+label.chk{font-size:12.5px;color:var(--slate);display:inline-flex;gap:6px;align-items:center;margin:0 0 14px;cursor:pointer}
+.ctl{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+button:focus-visible,.chip:focus-visible,.pill:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.tblwrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
+th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:9px 10px;border-bottom:2px solid var(--serieNavy);font-weight:600;vertical-align:bottom}
+th.r,td.r{text-align:right;font-family:var(--mono);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);color:var(--ink);vertical-align:top}
+tr:hover td{background:var(--hover)}
+tr.grp td{background:var(--tk);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:7px 10px}
+.flagtag{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:2px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.st{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+
+.takeaway{background:var(--tk);border-left:3px solid var(--accent);padding:13px 16px;font-size:13px;color:var(--slate);margin-top:16px}
+.takeaway b{color:var(--serieNavy)}
+
+.find{background:var(--card);border:1px solid var(--line);padding:20px 22px;border-top:3px solid var(--serieNavy)}
+.find.bad{border-top-color:var(--red)}.find.good{border-top-color:var(--teal)}
+.find .big{font-family:var(--serif);font-size:32px;font-weight:500;color:var(--serieNavy);letter-spacing:-.5px;line-height:1}
+.find.bad .big{color:var(--red)}
+.find h4{font-size:13px;font-weight:600;color:var(--ink);margin:10px 0 6px;line-height:1.35}
+.find p{font-size:12.5px;color:var(--slate)}
+
+.timeline{list-style:none}
+.timeline li{display:grid;grid-template-columns:78px 1fr auto;gap:14px;padding:10px;border-bottom:1px solid var(--line);font-size:13px}
+.timeline li:hover{background:var(--hover)}
+.timeline time{font-family:var(--mono);color:var(--accent2);font-weight:500}
+.timeline .u{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right}
+.dq{list-style:none;counter-reset:d}
+.dq li{counter-increment:d;position:relative;padding:12px 10px 12px 46px;border-bottom:1px solid var(--line);font-size:13px;color:var(--slate)}
+.dq li::before{content:counter(d,decimal-leading-zero);position:absolute;left:10px;top:12px;font-family:var(--mono);font-size:12px;color:var(--accent)}
+.dq b{color:var(--ink)}
+
+footer{margin:40px 0 24px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+@media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.g2,.g2e,.g3{grid-template-columns:1fr}}
+@media(max-width:900px){header h1{font-size:30px}.controlbar{position:static}.controlbar .wrap{gap:14px}.ctx{margin-left:0}}
+@media(max-width:560px){.timeline li{grid-template-columns:64px 1fr}.timeline .u{grid-column:2;text-align:left}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Atlanta Regional Commission &nbsp;&middot;&nbsp; Area Agency on Aging &nbsp;&middot;&nbsp; Aging &amp; Independence Services</div>
+    <h1>A&amp;IS Week Ahead Performance Dashboard</h1>
+    <p class="sub">Milestones, department performance metrics, FY2026 program trends and the contracts pipeline. Reporting period: August 2026 (FY2027 Period 2 of 12). Packet dated September 28, 2026.</p>
+    <div class="accent-rule"></div>
+  </div>
+</header>
+
+<div class="controlbar">
+  <div class="wrap">
+    <div class="fgroup">
+      <span class="glab">View</span>
+      <div class="segc" id="tabChips" role="tablist" aria-label="Dashboard views">
+        <button class="chip on" role="tab" aria-selected="true" data-tab="summary">Summary</button>
+        <button class="chip" role="tab" aria-selected="false" data-tab="services">Services</button>
+        <button class="chip" role="tab" aria-selected="false" data-tab="access">Access &amp; ADRC</button>
+        <button class="chip" role="tab" aria-selected="false" data-tab="programs">Programs</button>
+        <button class="chip" role="tab" aria-selected="false" data-tab="fy26">FY2026 review</button>
+        <button class="chip" role="tab" aria-selected="false" data-tab="contracts">Contracts</button>
+        <button class="chip" role="tab" aria-selected="false" data-tab="notes">Data notes</button>
+      </div>
+    </div>
+    <div class="ctx"><span id="ctxLabel">Aug 2026 &middot; packet 9/28/26</span><button class="mreset" id="themeBtn" type="button">switch theme</button></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+</div>
+
+<div class="wrap">
+
+<!-- ================= SUMMARY ================= -->
+<div class="tabpane on" id="tab-summary">
+  <section>
+    <div class="secthead"><span class="n">01</span><h2>Key findings for the week ahead</h2></div>
+    <div class="grid g3" id="findings"></div>
+  </section>
+  <section>
+    <div class="secthead"><span class="n">02</span><h2>Department performance scorecard</h2></div>
+    <div class="card">
+      <h3>DPM Status &mdash; Jun to Aug 2026</h3>
+      <div class="csub">Twelve department performance metrics with FY2027 year-to-date status. June closes FY2026; July and August open FY2027.</div>
+      <div class="filters" id="dpmFilter">
+        <button class="pill on" data-f="all">All metrics</button>
+        <button class="pill" data-f="On track">On track</button>
+        <button class="pill" data-f="Not on track">Not on track</button>
+        <button class="pill" data-f="Not started">Not started</button>
+      </div>
+      <div class="tblwrap"><table id="dpmTable"></table></div>
+      <div class="takeaway"><b>Seven of twelve metrics are on track.</b> Empowerline visits, caregiver fund expenditure and I&amp;R callback time are off target; satisfaction and findings await annual data. *Status recalculated from August data &mdash; the packet lists I&amp;R callback as "Not Started."</div>
+    </div>
+  </section>
+  <section>
+    <div class="secthead"><span class="n">03</span><h2>Funding pace &amp; FY2026 outcomes</h2></div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Fund Expenditure vs. Required Pace</h3>
+        <div class="csub">Share of funds expended by the provider network, YTD through August 2026 (%).</div>
+        <div class="chartbox"><canvas id="cFunds"></canvas></div>
+        <div class="takeaway"><b>Caregiver funds are expending at about half the required rate</b> &mdash; 8.61% against a 15.83% benchmark &mdash; while DAS, Alzheimer's and 5310 funds are ahead of pace.</div>
+        <p class="src">Benchmarks as stated in DPM commentary; 5310 grant year Oct 1&ndash;Sep 30. Source: DDS Financial Reimbursement Report; Costpoint.</p>
+      </div>
+      <div class="card">
+        <h3>FY2026 Outcome as % of Goal</h3>
+        <div class="csub">Final FY2026 results relative to each target (100% = goal met).</div>
+        <div class="chartbox"><canvas id="cFy26Goals"></canvas></div>
+        <div class="takeaway"><b>FY2026 closed above goal on five of six measures.</b> 5310 was measured at June 30 against a September 30 deadline.</div>
+        <p class="src">Quality findings inverted (98 vs. fewer than 137). Source: FY2026 Program Trends.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= SERVICES ================= -->
+<div class="tabpane" id="tab-services">
+  <section>
+    <div class="secthead"><span class="n">04</span><h2>DAS-funded service volume &amp; wait lists</h2></div>
+    <div class="grid g2">
+      <div class="card">
+        <h3 id="svcH">Units Provided &amp; Wait List</h3>
+        <div class="csub" id="svcSub">Units provided (bars), wait list and new enrollments (lines), Jun&ndash;Aug 2026.</div>
+        <div class="filters" id="svcSeg"></div>
+        <div class="chartbox tall"><canvas id="cSvc"></canvas></div>
+        <div class="takeaway" id="svcTake"></div>
+        <p class="src">Source: HAR Key Performance Indicators Report; Milestones Dashboard.</p>
+      </div>
+      <div class="card">
+        <h3>Months to Clear Wait List</h3>
+        <div class="csub">August wait list &divide; August new enrollments (months).</div>
+        <div class="chartbox tall"><canvas id="cClear"></canvas></div>
+        <div class="takeaway"><b>In-home wait lists run 11&ndash;13 months deep</b> at August intake rates; respite clears in under five.</div>
+        <p class="src">Illustrative; assumes August enrollment pace and no new additions.</p>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="secthead"><span class="n">05</span><h2>Momentum across services</h2></div>
+    <div class="grid g2e">
+      <div class="card">
+        <h3>Month-over-Month Change</h3>
+        <div class="csub">Percent change, July to August 2026. Red = wait list growth above 5%.</div>
+        <div class="chartbox xtall"><canvas id="cSvcChange"></canvas></div>
+        <div class="takeaway"><b>Respite is the only in-home service whose wait list grew materially</b> (+13%), even as respite hours rose 2%.</div>
+      </div>
+      <div class="card">
+        <h3>FY2026 Quarterly Trend, Indexed</h3>
+        <div class="csub">Quarterly average units provided, FY2026 Q1 = 100. Click the legend to toggle services.</div>
+        <div class="chartbox xtall"><canvas id="cIndex"></canvas></div>
+        <div class="takeaway"><b>In-home hours and congregate meals ended FY2026 below Q1 levels;</b> respite and case management held flat.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= ACCESS ================= -->
+<div class="tabpane" id="tab-access">
+  <section>
+    <div class="secthead"><span class="n">06</span><h2>ADRC demand &amp; responsiveness</h2></div>
+    <div class="grid g2e">
+      <div class="card">
+        <h3>Contacts Handled by Channel</h3>
+        <div class="csub">ADRC contacts, Jun&ndash;Aug 2026 (stacked; channels sum to the reported total).</div>
+        <div class="chartbox tall"><canvas id="cContacts"></canvas></div>
+        <div class="takeaway"><b>ADRC handles about 7,700 contacts a month;</b> APS referrals rose 43% in August (81 to 116). The queue held 967 calls with a 5.5-day longest wait for week ending 9/25; P28 satisfaction was 96%.</div>
+        <p class="src">APS referrals not reported for June. Source: Milestones Dashboard; Access to Services report.</p>
+      </div>
+      <div class="card">
+        <h3>Days to Return a Call, by Team</h3>
+        <div class="csub">FY2026 quarterly average vs. 2-day standard.</div>
+        <div class="chartbox tall"><canvas id="cCallback"></canvas></div>
+        <div class="takeaway"><b>Callback times roughly tripled in FY2026 Q4</b> to nearly 6 days for every team; August I&amp;R averaged 9. Three temporary triage specialists could start 10/19.</div>
+        <p class="src">Source: FY2026 Program Trends; DPM table.</p>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="secthead"><span class="n">07</span><h2>Channel shift</h2></div>
+    <div class="card">
+      <h3>Calls by Team vs. Web Intakes</h3>
+      <div class="csub">FY2026 quarterly average per month; calls stacked (left axis), web intakes (right axis).</div>
+      <div class="chartbox tall"><canvas id="cChannel"></canvas></div>
+      <div class="takeaway"><b>Demand is moving from phone to web.</b> FY2026 calls fell 34%, 13% and 30% for Teams 1&ndash;3 while web intakes rose 21% and Empowerline emails 43%.</div>
+      <p class="src">Source: InContact Campaign Summary by Skill; HAR ADRC Web Intake Report.</p>
+    </div>
+  </section>
+</div>
+
+<!-- ================= PROGRAMS ================= -->
+<div class="tabpane" id="tab-programs">
+  <section>
+    <div class="secthead"><span class="n">08</span><h2>Web reach &amp; care consultation</h2></div>
+    <div class="grid g2e">
+      <div class="card">
+        <h3>Empowerline.org Visits vs. Pace</h3>
+        <div class="csub">Monthly visits vs. 10,932 per month needed for the 131,189 FY2027 target.</div>
+        <div class="chartbox"><canvas id="cWeb"></canvas></div>
+        <div class="takeaway"><b>August beat the monthly pace</b> (11,020), but July's shortfall leaves the year 393 visits behind.</div>
+        <p class="src">GA4 Engaged Sessions used as visit proxy.</p>
+      </div>
+      <div class="card">
+        <h3>Care Consultation Flow</h3>
+        <div class="csub">New cases and discharges (bars), total clients served (line).</div>
+        <div class="chartbox"><canvas id="cCare"></canvas></div>
+        <div class="takeaway"><b>Discharges halved to 6 while caseload rose to 126</b> &mdash; the packet asks whether demand or capacity drove it.</div>
+        <p class="src">Source: BRI Enrollment Activity Report.</p>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="secthead"><span class="n">09</span><h2>Transitions &amp; outreach</h2></div>
+    <div class="grid g2e">
+      <div class="card">
+        <h3>Community Transitions</h3>
+        <div class="csub">New MFP and NHT transitions (stacked), MDS options counseling referrals (line).</div>
+        <div class="chartbox"><canvas id="cTrans"></canvas></div>
+        <div class="takeaway"><b>Transitions rebounded to 11 in August,</b> the high of the three months; MDS referrals rose steadily to 63.</div>
+      </div>
+      <div class="card">
+        <h3>Outreach Events &amp; Presentations</h3>
+        <div class="csub">Count per month; tracking began July 2026.</div>
+        <div class="chartbox"><canvas id="cOutreach"></canvas></div>
+        <div class="takeaway"><b>Volunteer-supported events and staff presentations more than doubled in August.</b></div>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="secthead"><span class="n">10</span><h2>Evidence-based &amp; referral programs</h2></div>
+    <div class="grid g2e">
+      <div class="card">
+        <h3>Evidence-Based Workshops, FY2026</h3>
+        <div class="csub">Workshops completed by program.</div>
+        <div class="filters" id="ebpSeg">
+          <button class="pill on" data-v="total">FY2026 total</button>
+          <button class="pill" data-v="yoy">Change vs. FY2025</button>
+        </div>
+        <div class="chartbox"><canvas id="cEbp"></canvas></div>
+        <div class="takeaway"><b>Balance and Bingocize grew; Tai Chi fell 43%.</b> Small bases &mdash; one or two workshops swing the percentages.</div>
+      </div>
+      <div class="card">
+        <h3>Referral-Based Services, FY2026</h3>
+        <div class="csub">Change vs. FY2025, with FY2026 annual total in parentheses.</div>
+        <div class="chartbox"><canvas id="cRef"></canvas></div>
+        <div class="takeaway"><b>Legal and culturally appropriate I&amp;R grew fastest;</b> Memory Assessment Clinic referrals fell 37%.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= FY26 ================= -->
+<div class="tabpane" id="tab-fy26">
+  <section>
+    <div class="secthead"><span class="n">11</span><h2>FY2026 year over year</h2></div>
+    <div class="card">
+      <h3>Annual Total Change, FY2026 vs. FY2025</h3>
+      <div class="csub">Percent change by metric. Filter by area or include small-base programs.</div>
+      <div class="ctl">
+        <select id="yoyGroup" aria-label="Filter by area">
+          <option value="all">All areas</option><option value="Services">DAS-funded services</option>
+          <option value="Access">Access &amp; ADRC</option><option value="Programs">Programs</option><option value="Outreach">Outreach &amp; web</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="smallBase"> Include small-base programs (&lt;60 annual units)</label>
+      </div>
+      <div class="chartbox" id="yoyBox"><canvas id="cYoy"></canvas></div>
+      <div class="takeaway"><b>FY2026 grew in-home hours, legal services and web intake,</b> while phone volume, EDWP referrals and memory clinic referrals declined.</div>
+      <p class="src">Source: FY2026 Program Trends.</p>
+    </div>
+  </section>
+  <section>
+    <div class="secthead"><span class="n">12</span><h2>Metric explorer</h2></div>
+    <div class="card">
+      <h3>Quarterly Profile</h3>
+      <div class="csub">FY2026 quarterly average for the selected metric. Blue = peak quarter, grey = low quarter.</div>
+      <select id="expSel" aria-label="Choose a metric"></select>
+      <div class="chartbox"><canvas id="cExp"></canvas></div>
+      <div class="takeaway" id="expTake"></div>
+      <p class="src" id="expSrc"></p>
+    </div>
+  </section>
+</div>
+
+<!-- ================= CONTRACTS ================= -->
+<div class="tabpane" id="tab-contracts">
+  <section>
+    <div class="secthead"><span class="n">13</span><h2>OAA FY2027 contract pipeline</h2></div>
+    <div class="card">
+      <h3>Provider Contract Status</h3>
+      <div class="csub">17 OAA FY2027 provider contracts as of September 25, 2026. Click a segment or pill to filter the table.</div>
+      <div class="chartbox short"><canvas id="cPipe"></canvas></div>
+      <div class="filters" id="pipeSeg" style="margin-top:14px"></div>
+      <div class="tblwrap"><table id="pipeTable"></table></div>
+      <div class="takeaway"><b>Twelve of seventeen contracts are not yet fully executed.</b> Three executed contracts await PO release pending the procurement lead's return on 9/29.</div>
+      <p class="src">Source: Contracts Updates, week ending 9/25/2026.</p>
+    </div>
+  </section>
+  <section>
+    <div class="secthead"><span class="n">14</span><h2>Aging &amp; approval queue</h2></div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Days Open by Contract Item</h3>
+        <div class="csub">As of 9/25/2026, from earliest submission or routing date. Red = critical path; navy = over 30 days.</div>
+        <div class="chartbox xtall"><canvas id="cAging"></canvas></div>
+        <div class="takeaway"><b>Four items have aged past 40 days,</b> and the Cumulus Care contract must be executed by early October for the year-end data-system cutover.</div>
+      </div>
+      <div class="card">
+        <h3>Open Items by Party Awaited</h3>
+        <div class="csub">Count of open contract actions.</div>
+        <div class="chartbox"><canvas id="cApprover"></canvas></div>
+        <div class="takeaway"><b>Internal approvals concentrate on one reviewer</b> (8 items). External parties include the nine OAA providers holding contracts for signature.</div>
+        <div class="takeaway"><b>Business Operations.</b> August DAS grant billed; FY2026 June and 13th-month DAS payments still outstanding after a state system upgrade. GL-to-DDS unit-cost reconciliation remains the key barrier; provider billing training and financial monitoring are due within 2&ndash;3 weeks.</div>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="secthead"><span class="n">15</span><h2>Upcoming dates</h2></div>
+    <div class="card">
+      <h3>Calendar, Sep 29 &ndash; Dec 1</h3>
+      <div class="csub">Dates cited across unit week-ahead reports.</div>
+      <div class="filters" id="tlSeg"></div>
+      <ul class="timeline" id="timeline"></ul>
+      <div class="takeaway"><b>October is dense:</b> the 5310 NOFA posting, ADRC Material Aid launch and LBE Board presentation all fall in the first two weeks.</div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= NOTES ================= -->
+<div class="tabpane" id="tab-notes">
+  <section>
+    <div class="secthead"><span class="n">16</span><h2>Data reconciliation</h2></div>
+    <div class="card">
+      <h3>Items to Reconcile Before Circulation</h3>
+      <div class="csub">Inconsistencies found in the September 28 packet.</div>
+      <ol class="dq">
+        <li><b>Behavioral Health documentation target.</b> DPM table states at least 90%; commentary and FY2026 goal page state at least 80%.</li>
+        <li><b>I&amp;R callback status.</b> Listed "Not Started," yet July&ndash;August data (9 days vs. 2) shows the target unmet, as the commentary concludes.</li>
+        <li><b>Expenditure pace benchmark.</b> Fund metrics use 15.83% through August; straight-line two-month pace is 16.67% (2 &divide; 12), the basis used for the Empowerline pace of 21,864.</li>
+        <li><b>ADRC total contacts, FY2026 Q4.</b> Trends report shows 1,994 (May) and 2,184 (June) because InContact call data ends in April; Milestones reports 7,588 for June. Q4 average and the &minus;19.08% annual change are understated.</li>
+        <li><b>Fayette County (082724).</b> Listed both as pending signature and as fully executed with PO released 9/09.</li>
+        <li><b>June one-way rides.</b> 9,990 on the Milestones Dashboard vs. 10,015 in the Trends report.</li>
+        <li><b>Business Operations billing YTD.</b> Status "On Track" but YTD value blank ("% vs 95%"); July and August were 100%.</li>
+        <li><b>Date entries.</b> "8/32/26" in the Cumulus log; the agenda page is dated September 21 in a September 28 packet.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <span>Source: A&amp;IS Week Ahead packet, September 28, 2026 &mdash; Milestones Dashboard, Department Performance Metrics, FY2026 Program Trends and unit reports. Derived measures (pace gaps, months to clear, indices, days open) are planning calculations, not figures of record.</span>
+  <span class="mono">Prepared for internal review</span>
+</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+if(typeof Chart==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"><\/script>');}
+</script>
+<script>
+(function(){
+"use strict";
+const M3=['Jun 2026','Jul 2026','Aug 2026'];
+const Q=['Q1','Q2','Q3','Q4'];
+
+const DPM=[
+ {grp:'Outreach',prog:'Empowerline Outreach',kpi:'Empowerline.org visits',m:[10467,10451,11020],f:'n',target:'Over 131,189 visits annually',ytd:'21,471 vs. 21,864 pace',status:'Not on track'},
+ {grp:'Provider network funds',prog:'Provider Network',kpi:'DAS funds expended',m:[97.75,8.65,19.11],f:'p',target:'At least 95% annually',ytd:'19.11% vs. 15.83% pace',status:'On track'},
+ {grp:'Provider network funds',prog:'Provider Network',kpi:"Alzheimer's funds expended (state and CBS)",m:[null,9.60,18.30],f:'p',target:'At least 95% annually',ytd:'18.30% vs. 15.83% pace',status:'On track'},
+ {grp:'Provider network funds',prog:'Provider Network',kpi:'Caregiver funds expended (Title IIIE, CBS-Respite)',m:[null,4.13,8.61],f:'p',target:'At least 95% annually',ytd:'8.61% vs. 15.83% pace',status:'Not on track'},
+ {grp:'Provider network funds',prog:'Provider Network',kpi:'FTA Section 5310 funds expended',m:[92.43,98.88,99.12],f:'p',target:'At least 95% (Oct 1–Sep 30)',ytd:'99.12% vs. 87.03% pace',status:'On track'},
+ {grp:'Service quality',prog:'Behavioral Health',kpi:'Required data elements documented in case files',m:[100,99,100],f:'p',target:'At least 90% of 14 elements',ytd:'100% vs. 90%',status:'On track'},
+ {grp:'Service quality',prog:'Telephone Reassurance',kpi:'New One2One volunteers onboarded and matched',m:[null,2,2],f:'n',target:'2 per month, 24 annually',ytd:'4 vs. 24',status:'On track'},
+ {grp:'Service quality',prog:'ADRC',kpi:'Average days for I&R line to return a call',m:[null,9,9],f:'d',target:'2 business days',ytd:'9 vs. 2',status:'Not on track',star:true},
+ {grp:'Service quality',prog:'EPRO Team',kpi:'ePRO tickets submitted to agingtech email',m:[0,2,2],f:'n',target:'Fewer than 5 per month',ytd:'2 vs. 5',status:'On track'},
+ {grp:'Service quality',prog:'Business Operations',kpi:'Billing deadlines met on all funds',m:[97.92,100,100],f:'p',target:'Average of at least 95%',ytd:'Not reported',status:'On track'},
+ {grp:'Service quality',prog:'Quality Team',kpi:'Consumers satisfied with services',m:[null,null,null],f:'p',target:'At least 85% (survey each August)',ytd:'Results due September',status:'Not started'},
+ {grp:'Service quality',prog:'Quality Team',kpi:'Findings in FY2027',m:[null,null,null],f:'n',target:'Maintain or reduce citations',ytd:'Reported quarterly',status:'Not started'}
+];
+
+const SVC={
+ hdm:{name:'Home delivered meals',unit:'Meals provided',prov:[39566,50308,48824],wait:[2093,2080,2046],neu:[211,169,190],q:[49601,48273,47896,44776]},
+ pc:{name:'Personal care',unit:'Hours provided',prov:[2388,4201,3699],wait:[867,879,882],neu:[116,88,79],q:[3801,2533,3183,2422]},
+ hm:{name:'Homemaker',unit:'Hours provided',prov:[3301,5584,5309],wait:[1835,1821,1819],neu:[189,146,144],q:[5675,4347,4277,3800]},
+ rc:{name:'Respite care',unit:'Hours provided',prov:[3040,3454,3527],wait:[143,174,197],neu:[32,51,42],q:[3571,3487,3465,3545]},
+ cm:{name:'Congregate meals',unit:'Meals provided',prov:[17746,24950,24502],wait:null,neu:null,q:[24126,23186,18678,17717]},
+ cs:{name:'Case management',unit:'Hours provided',prov:[2545,2779,2474],wait:null,neu:null,q:[2873,2902,2976,2804]}
+};
+
+const YOY=[
+ ['Empowerline visits','Outreach',126730,1.43],['Empowerline pageviews','Outreach',357310,-6.90],['Empowerline self-service page visits','Outreach',6886,-0.98],
+ ['Care Consultation new cases','Programs',136,10.57],['Care Consultation discharges','Programs',129,-5.84],
+ ['BH new Atlanta Housing participants','Programs',55,19.57],['BH new Campbell-Stone participants','Programs',17,54.55],['BH new Mercy participants','Programs',15,15.38],
+ ['Chronic Disease Self-Mgmt workshops','Programs',6,20.00],['Chronic Pain Self-Mgmt workshops','Programs',0,-100],['Diabetes Self-Mgmt workshops','Programs',1,-50],
+ ['Powerful Tools for Caregivers','Programs',5,66.67],['A Matter of Balance','Programs',11,22.22],['Tai Chi for Arthritis','Programs',13,-43.48],['Bingocize','Programs',13,116.67],
+ ['New MFP transitions','Programs',33,-2.94],['New NHT transitions','Programs',23,0],['MDS options counseling referrals','Access',813,-4.80],['NH community outreach sessions','Outreach',154,-1.28],
+ ['Calls handled, ADRC Team 1','Access',31469,-33.98],['Calls handled, ADRC Team 2','Access',38939,-13.30],['Calls handled, ADRC Team 3','Access',16871,-30.44],
+ ['Empowerline aging info emails','Access',2525,43.38],['Walk-ins','Access',63,-14.86],['Web intakes','Access',19203,20.54],
+ ['Home delivered meals','Services',571636,1.60],['Personal care hours','Services',35818,12.60],['Homemaker hours','Services',54299,10.62],
+ ['Respite care hours','Services',42204,-3.89],['Congregate meals','Services',251120,2.12],['Case management hours','Services',34667,-0.24],
+ ['Memory Assessment Clinic referrals','Access',139,-36.53],['One-way rides (DAS and 5310)','Services',175859,-5.95],['UniteUs referrals','Access',1869,-9.23],
+ ['Legal services cases','Services',421,32.81],['Culturally appropriate I&R units','Access',564,13.94]
+];
+
+const EXP={
+ 'Empowerline visits':{q:[10899,9745,11472,10127],src:'Google Analytics 4'},
+ 'Empowerline pageviews':{q:[31456,27519,31261,28867],src:'Google Analytics 4'},
+ 'Care Consultation total clients served':{q:[121,124,120,122],src:'BRI Enrollment Activity Report'},
+ 'New MFP transitions':{q:[1,3,3,4],src:'Internal spreadsheet, HAR'},
+ 'MDS options counseling referrals':{q:[58,55,110,48],src:'Internal spreadsheet, HAR'},
+ 'ADRC total contacts handled':{q:[11919,9363,10213,4861],src:'InContact, HAR (Q4 understated; see Data notes)'},
+ 'Web intakes handled':{q:[1543,1259,1683,1916],src:'HAR ADRC Web Intake Report'},
+ 'Home delivered meals provided':{q:[49601,48273,47896,44776],src:'HAR KPI Report'},
+ 'Home delivered meals wait list':{q:[2583,2429,2350,2140],src:'HAR KPI Report'},
+ 'Personal care hours':{q:[3801,2533,3183,2422],src:'HAR KPI Report'},
+ 'Personal care wait list':{q:[914,863,890,856],src:'HAR KPI Report'},
+ 'Homemaker hours':{q:[5675,4347,4277,3800],src:'HAR KPI Report'},
+ 'Homemaker wait list':{q:[1934,1854,1902,1847],src:'HAR KPI Report'},
+ 'Respite care hours':{q:[3571,3487,3465,3545],src:'HAR KPI Report'},
+ 'Respite wait list':{q:[143,129,137,127],src:'HAR KPI Report'},
+ 'Congregate meals':{q:[24126,23186,18678,17717],src:'HAR KPI Report'},
+ 'Case management hours':{q:[2873,2902,2976,2804],src:'HAR KPI Report'},
+ 'EDWP clients screened':{q:[363,375,358,394],src:'HAR DON-R Report'},
+ 'EDWP wait list':{q:[366,357,338,370],src:'DDS CCSP Programmatic Report'},
+ 'EmpowerlinePRO compliance (%)':{q:[97,96,89,78],src:'ePRO'},
+ 'Memory Assessment Clinic referrals':{q:[15,14,11,6],src:'HAR MAC Referral Report'},
+ 'One-way rides (DAS and 5310)':{q:[16964,13802,14514,13340],src:'HAR KPI Report; internal 5310 spreadsheet'},
+ 'UniteUs referrals':{q:[148,127,182,166],src:'UniteUs'},
+ 'Legal services cases':{q:[41,20,44,35],src:'Atlanta Legal Aid Society'},
+ 'Culturally appropriate I&R units':{q:[43,67,43,35],src:'Internal spreadsheet'}
+};
+
+const PIPE_ORDER=['Out for signature','Pending ARC approval','Action needed','Executed, PO pending','Executed, PO released'];
+const CONTRACTS=[
+ ['Atlanta Legal Aid','082719','Executed, PO released','PO released 9/09; executed contract sent'],
+ ['Cherokee County','082720','Out for signature',''],
+ ['Clayton County','082721','Executed, PO pending','Executed 9/24; PO follow-up 9/29'],
+ ['DeKalb County','082722','Out for signature',''],
+ ['Douglas County','082723','Out for signature',''],
+ ['Fayette County','082724','Executed, PO released','Also listed as pending signature; see Data notes'],
+ ['Fulton County','082726','Out for signature',''],
+ ['Gwinnett County','082727','Out for signature',''],
+ ['Henry County','082728','Out for signature',''],
+ ['HouseProud Atlanta','082729','Executed, PO pending','PO requested 9/15; awaiting 9/29 return'],
+ ['ISDD','082730','Out for signature',''],
+ ['Jewish Family & Career Services','082731','Out for signature',''],
+ ['Latin American Association','082732','Action needed','Rejected 9/09: signature placed in ARC section; correction requested'],
+ ['Peachtree Christian Health','082733','Pending ARC approval','Routed 9/23'],
+ ['Rockdale County','082734','Action needed','Partially executed contract not received'],
+ ['Skylark ADH Johns Creek','082735','Executed, PO pending','PO requested 9/15; awaiting 9/29 return'],
+ ['Cobb County','082736','Out for signature','']
+];
+
+const AGING=[
+ ['Fuqua amendment (AG2418.3), awaiting vendor',88,'ext'],
+ ['DCA Housing Memo (082739), Legal review',66,'int'],
+ ['Complete Home Medical Equip. (RQ000774)',57,'int'],
+ ['GHPC evaluation (REV082708)',44,'int'],
+ ['BRD Letter of Agreement (082737)',28,'ext'],
+ ['Cumulus Care (RQ000691), critical path',17,'crit'],
+ ['GSU School of Social Work MOU (082747)',15,'int'],
+ ['Skylark / HouseProud PO release',10,'int'],
+ ['Peachtree Christian Health (082733)',2,'int'],
+ ['Gorman Housing MOU (082748)',2,'int'],
+ ['Trualta amendment #4 (AG2345.4)',2,'int'],
+ ['HouseProud amendment #4 (AG2444)',2,'int'],
+ ['Fuqua DHS subcontract (AG2419.3)',2,'int'],
+ ['Mystery Shopper RFP (RQ000823)',1,'int']
+];
+
+const APPROVER=[['External parties',15],['Rhea',8],['Reggie (PO / procurement)',4],['Legal',1],['Steve Williams',1],['Review owner not specified',1]];
+
+const TL=[
+ ['2026-09-29','DAS PAX meeting (Access supervisors); PO release follow-ups resume','Access / Contracts'],
+ ['2026-09-30','Cross-county-line transportation discussion; DeKalb subprovider monitoring shadow','SPQ'],
+ ['2026-09-30','Virtual Dementia Tour, Douglas County (tentative)','HCBS'],
+ ['2026-10-01','Provider network budget meetings conclude (began 9/28)','HCBS'],
+ ['2026-10-02','Korean American Senior Welfare Forum, Gwinnett engagement','SPQ'],
+ ['2026-10-03','One2One training for Spanish-speaking volunteers','Program Dev.'],
+ ['2026-10-05','5310 NOFA posting; ADRC Material Aid launch','Contracts / Access'],
+ ['2026-10-06','Senior Hunger Coalition meeting; MFP marketing meeting','HCBS / Access'],
+ ['2026-10-07','Gwinnett Caregiver Strong Summit breakout sessions','Access'],
+ ['2026-10-08','Fulton County and Grady older-adult education session','Access'],
+ ['2026-10-09','AH Piedmont Road High Rise resource fair; USAging nomination deadline','Program Dev. / Access'],
+ ['2026-10-12','Dementia Friends, Heritage Senior Center (Henry)','HCBS'],
+ ['2026-10-13','Dementia Friends, Wieuca Song Shape Chorus','HCBS'],
+ ['2026-10-14','Livable Beyond Expectations 2026–2031 to ARC Board','SPQ'],
+ ['2026-10-19','Three temporary ADRC triage support specialists may start','Access'],
+ ['2026-10-22','Dementia Coalition; GMN conference','HCBS / Access'],
+ ['2026-10-23','GMN Summit presentation on Trualta','Access'],
+ ['2026-11-07','Care-Net caregiver virtual panel','Access'],
+ ['2026-11-10','APS District B staff training on referrals, Lawrenceville','Access'],
+ ['2026-11-14','Breakfast of Champions caregiver event','Access'],
+ ['2026-12-01','Quality Team presentation to ACA','SPQ']
+];
+
+
+/* ---------------- HELPERS ---------------- */
+const $=s=>document.querySelector(s);
+const fmtN=v=>v==null?'\u2014':Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
+const fmtP=v=>v==null?'\u2014':Number(v).toFixed(v%1===0?0:2)+'%';
+const pct=(a,b)=>b?((a-b)/b*100):null;
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let T={};
+function readTheme(){
+  const cs=getComputedStyle(document.documentElement);
+  const g=k=>cs.getPropertyValue('--'+k).trim();
+  T={navy:g('serieNavy'),blue:g('accent2'),gold:g('accent'),teal:g('teal'),soft:g('soft'),warm:g('warm'),red:g('red'),
+     slate:g('slate'),muted:g('muted'),grid:g('grid'),line:g('line'),ink:g('ink'),card:g('card'),tk:g('tk'),darkNavy:g('navy')};
+  T.dark=g('paper').toLowerCase()!=='#f6f4ef';
+  T.inNavy=T.dark?'#0b1320':'#ffffff';
+}
+const MONO="'IBM Plex Mono', Menlo, monospace";
+function harvey(f){
+  const c=T.navy;let inner='';
+  if(f>=1)inner=`<circle cx="9" cy="9" r="8" fill="${c}"/>`;
+  else if(f>0){const a=2*Math.PI*f,x=9+8*Math.sin(a),y=9-8*Math.cos(a);inner=`<path d="M9 9 L9 1 A8 8 0 ${f>.5?1:0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z" fill="${c}"/>`;}
+  return `<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="none" stroke="${c}" stroke-width="1.4"/>${inner}</svg>`;
+}
+const HF={'On track':1,'Not on track':.5,'Not started':0};
+
+const valueLabels={id:'valueLabels',afterDatasetsDraw(chart,args,o){
+  if(!o||!o.enabled)return;const ctx=chart.ctx;ctx.save();ctx.font=`500 11.5px ${MONO}`;
+  const horiz=chart.options.indexAxis==='y';
+  chart.data.datasets.forEach((ds,i)=>{
+    const meta=chart.getDatasetMeta(i);if(meta.hidden||meta.type!=='bar'||ds.noLabel)return;
+    meta.data.forEach((el,j)=>{const v=ds.data[j];if(v==null)return;const txt=(o.fmt||fmtN)(v,ds,j);
+      if(o.inside){const p=el.getProps(['x','y','base'],true);const size=horiz?Math.abs(p.x-p.base):Math.abs(p.base-p.y);if(size<22)return;
+        ctx.fillStyle=ds.labelColor||'#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+        horiz?ctx.fillText(txt,(p.x+p.base)/2,p.y):ctx.fillText(txt,p.x,(p.y+p.base)/2);}
+      else{ctx.fillStyle=T.slate;
+        if(horiz){ctx.textAlign=v<0?'right':'left';ctx.textBaseline='middle';ctx.fillText(txt,el.x+(v<0?-5:5),el.y);}
+        else{ctx.textAlign='center';ctx.textBaseline=v<0?'top':'bottom';ctx.fillText(txt,el.x,el.y+(v<0?4:-4));}}
+    });
+  });ctx.restore();}};
+
+const charts={};
+function make(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);return charts[id];}
+function deepMerge(a,b){for(const k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==='object')deepMerge(a[k],b[k]);else a[k]=b[k];}return a;}
+function opts(extra){
+  const base={responsive:true,maintainAspectRatio:false,animation:reduce?false:{duration:500},
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10,padding:10,color:T.slate,font:{size:11}}},
+      tooltip:{backgroundColor:T.darkNavy,titleColor:'#fff',bodyColor:'#cdd8e6',titleFont:{family:"'IBM Plex Sans'"},bodyFont:{family:MONO,size:12},padding:10,cornerRadius:2,
+        callbacks:{label:c=>`${c.dataset.label?c.dataset.label+': ':''}${fmtN(c.chart.options.indexAxis==='y'?c.parsed.x:c.parsed.y)}`}},
+      valueLabels:{enabled:false}},
+    scales:{x:{grid:{display:false},border:{color:T.line},ticks:{color:T.slate}},y:{grid:{color:T.grid},border:{display:false},ticks:{color:T.muted}}}};
+  return deepMerge(base,extra||{});
+}
+const hbar=(xExtra)=>({indexAxis:'y',scales:{x:Object.assign({grid:{display:true,color:T.grid},ticks:{color:T.muted}},xExtra||{}),y:{grid:{display:false},ticks:{color:T.ink,font:{size:12}}}}});
+
+/* ---------------- KPI STRIP ---------------- */
+function renderKpis(){
+  const on=DPM.filter(d=>d.status==='On track').length;
+  const k=[
+    {l:'DPMs On Track',v:`${on} of ${DPM.length}`,n:'3 off target, 2 awaiting data',m:[on/DPM.length*100]},
+    {l:'Caregiver Funds',v:'8.61%',n:'vs. 15.83% pace through Aug',m:[8.61/95*100,15.83/95*100],bad:true},
+    {l:'I&R Callback',v:'9 days',n:'vs. 2-day standard; 967 in queue',bad:true},
+    {l:'ADRC Contacts',v:'7,689',n:'August; APS referrals +43%'},
+    {l:'OAA FY27 Executed',v:'5 of 17',n:'3 awaiting PO release',m:[5/17*100]}
+  ];
+  $('#kpis').innerHTML=k.map(x=>`<div class="kpi"><div class="label">${x.l}</div><div class="val${x.bad?' bad':''}">${x.v}</div><div class="note">${x.n}</div>${x.m?`<div class="meter"><i style="width:${x.m[0].toFixed(1)}%"></i>${x.m[1]?`<b style="left:${x.m[1].toFixed(1)}%"></b>`:''}</div>`:''}</div>`).join('');
+}
+
+/* ---------------- SUMMARY ---------------- */
+function renderFindings(){
+  const f=[
+    ['bad','54%','Caregiver funds are the one fund stream off pace','Title IIIE and CBS-Respite have expended 8.61% against a 15.83% benchmark while the respite wait list grew from 143 to 197.'],
+    ['bad','9 days','ADRC callbacks take more than four times the standard','I&R averaged 9 days against a 2-day SOP; 967 calls in queue with a 5.5-day longest wait for week ending 9/25.'],
+    ['','11\u201313 mo','In-home wait lists represent roughly a year of intake','At August enrollment, home delivered meals (10.8), personal care (11.2) and homemaker (12.6) lists take about a year to clear.'],
+    ['','12 of 17','Most OAA FY2027 contracts are not yet executed','Nine are out for provider signature, two need corrective action and one awaits ARC approval; eight open items sit with one reviewer.'],
+    ['','+43%','APS referrals and outreach climbed in August','APS referrals rose 81 to 116, volunteer-supported events 3 to 8 and staff presentations 3 to 7.'],
+    ['good','97.88%','FY2026 closed above spending and billing targets','DAS funds 97.88% expended with 13th-month billing; billing deadlines 100% met in Jul\u2013Aug; Empowerline 126,730 visits vs. 124,942 goal.']
+  ];
+  $('#findings').innerHTML=f.map(x=>`<div class="find ${x[0]}"><div class="big">${x[1]}</div><h4>${x[2]}</h4><p>${x[3]}</p></div>`).join('');
+}
+function renderDPM(filter){
+  const rows=DPM.filter(d=>filter==='all'||d.status===filter);
+  const fmt=(v,f)=>v==null?'\u2014':f==='p'?fmtP(v):f==='d'?v+' days':fmtN(v);
+  let html=`<thead><tr><th>Program</th><th>Key performance indicator</th><th class="r">Jun 2026</th><th class="r">Jul 2026</th><th class="r">Aug 2026</th><th>Target</th><th>YTD vs. goal</th><th>Status</th></tr></thead><tbody>`;
+  let g='';
+  rows.forEach(d=>{if(d.grp!==g){g=d.grp;html+=`<tr class="grp"><td colspan="8">${g}</td></tr>`;}
+    const col=d.status==='On track'?T.teal:d.status==='Not on track'?T.red:T.muted;
+    html+=`<tr><td>${d.prog}</td><td>${d.kpi}</td><td class="r">${fmt(d.m[0],d.f)}</td><td class="r">${fmt(d.m[1],d.f)}</td><td class="r">${fmt(d.m[2],d.f)}</td><td>${d.target}</td><td class="mono" style="font-size:12px">${d.ytd}</td><td><span class="st">${harvey(HF[d.status])}<span style="color:${col};font-weight:600">${d.status}${d.star?'*':''}</span></span></td></tr>`;});
+  if(!rows.length)html+=`<tr><td colspan="8">No metrics in this status.</td></tr>`;
+  $('#dpmTable').innerHTML=html+'</tbody>';
+}
+function chartFunds(){
+  const labels=["Caregiver","Alzheimer's","DAS (all)","FTA Section 5310"];
+  const ytd=[8.61,18.30,19.11,99.12],pace=[15.83,15.83,15.83,87.03];
+  make('cFunds',{type:'bar',data:{labels,datasets:[
+    {label:'Expended YTD',data:ytd,backgroundColor:ytd.map((v,i)=>v<pace[i]?T.red:T.navy),barThickness:18,borderRadius:2},
+    {label:'Required pace',data:pace,backgroundColor:T.gold,barThickness:6,borderRadius:2}]},
+    options:opts(deepMerge(hbar({max:112,ticks:{callback:v=>v+'%',color:T.muted}}),{plugins:{valueLabels:{enabled:true,fmt:v=>v.toFixed(2)+'%'},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.x.toFixed(2)}%`}}}}))});
+}
+function chartFy26(){
+  const rows=[['DAS funds expended',97.88/95*100,'97.88% vs. 95%'],['Empowerline visits',126730/124942*100,'126,730 vs. 124,942'],['Billing deadlines met',97.92/95*100,'97.92% vs. 95%'],['Consumer satisfaction (FY25)',98/85*100,'98% vs. 85%'],['Quality findings',137/98*100,'98 vs. <137 (inverted)'],['FTA 5310 (at Jun 30)',92.43/95*100,'92.43% vs. 95%']];
+  make('cFy26Goals',{type:'bar',data:{labels:rows.map(r=>r[0]),datasets:[{label:'% of goal',data:rows.map(r=>+r[1].toFixed(1)),backgroundColor:rows.map(r=>r[1]>=100?T.navy:T.gold),barThickness:16,borderRadius:2}]},
+    options:opts(deepMerge(hbar({min:80,max:150,ticks:{callback:v=>v+'%',color:T.muted}}),{plugins:{legend:{display:false},valueLabels:{enabled:true,fmt:v=>v.toFixed(0)+'%'},tooltip:{callbacks:{label:c=>rows[c.dataIndex][2]}}}}))});
+}
+
+/* ---------------- SERVICES ---------------- */
+let curSvc='hdm';
+function chartSvc(){
+  const s=SVC[curSvc];const ch=pct(s.prov[2],s.prov[1]);
+  $('#svcH').textContent=`${s.name} \u2014 ${s.unit}`;
+  $('#svcSub').textContent=s.wait?`${s.unit} (bars), wait list and new enrollments (lines), Jun\u2013Aug 2026.`:`${s.unit}, Jun\u2013Aug 2026.`;
+  $('#svcTake').innerHTML=`<b>${s.unit} ${ch>=0?'rose':'fell'} ${Math.abs(ch).toFixed(0)}% in August</b> to ${fmtN(s.prov[2])}.`+(s.wait?` Wait list ${pct(s.wait[2],s.wait[1])>=0?'grew':'eased'} to ${fmtN(s.wait[2])}; ${s.neu[2]} newly enrolled.`:' No wait list is tracked for this service.');
+  const ds=[{type:'bar',label:s.unit,data:s.prov,backgroundColor:T.navy,yAxisID:'y',maxBarThickness:54,borderRadius:2,labelColor:T.inNavy,order:2}];
+  if(s.wait){ds.push({type:'line',label:'Wait list',data:s.wait,borderColor:T.gold,backgroundColor:T.gold,yAxisID:'y1',pointRadius:4,borderWidth:2.4,tension:.3,order:1});
+    ds.push({type:'line',label:'New enrollments',data:s.neu,borderColor:T.blue,backgroundColor:T.blue,yAxisID:'y1',borderDash:[5,4],pointRadius:4,borderWidth:2,tension:.3,order:1});}
+  make('cSvc',{type:'bar',data:{labels:M3,datasets:ds},options:opts({plugins:{valueLabels:{enabled:true,inside:true}},
+    scales:{y:{beginAtZero:true,title:{display:true,text:s.unit,color:T.muted}},y1:{display:!!s.wait,position:'right',beginAtZero:true,grid:{display:false},ticks:{color:T.muted},title:{display:true,text:'People',color:T.muted}}}})});
+}
+function buildSvcSeg(){
+  $('#svcSeg').innerHTML=Object.entries(SVC).map(([k,s])=>`<button class="pill${k===curSvc?' on':''}" data-k="${k}">${s.name}</button>`).join('');
+  $('#svcSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;curSvc=b.dataset.k;[...$('#svcSeg').children].forEach(x=>x.classList.toggle('on',x===b));chartSvc();};
+}
+function chartClear(){
+  const keys=['hm','pc','hdm','rc'];const vals=keys.map(k=>+(SVC[k].wait[2]/SVC[k].neu[2]).toFixed(1));
+  make('cClear',{type:'bar',data:{labels:keys.map(k=>SVC[k].name),datasets:[{label:'Months',data:vals,backgroundColor:vals.map(v=>v>10?T.navy:T.soft),barThickness:26,borderRadius:2}]},
+    options:opts(deepMerge(hbar({max:15}),{plugins:{legend:{display:false},valueLabels:{enabled:true,fmt:v=>v.toFixed(1)+' mo'},
+      tooltip:{callbacks:{label:c=>{const s=SVC[keys[c.dataIndex]];return `${fmtN(s.wait[2])} waiting \u00f7 ${s.neu[2]} enrolled = ${c.parsed.x} months`;}}}}}))});
+}
+function chartSvcChange(){
+  const rows=[];
+  ['hdm','pc','hm','rc'].forEach(k=>{const s=SVC[k];rows.push([s.name+', '+s.unit.split(' ')[0].toLowerCase(),pct(s.prov[2],s.prov[1])]);rows.push([s.name+', wait list',pct(s.wait[2],s.wait[1])]);rows.push([s.name+', new enrollments',pct(s.neu[2],s.neu[1])]);});
+  rows.push(['Congregate meals',pct(SVC.cm.prov[2],SVC.cm.prov[1])]);rows.push(['Case management hours',pct(SVC.cs.prov[2],SVC.cs.prov[1])]);
+  make('cSvcChange',{type:'bar',data:{labels:rows.map(r=>r[0]),datasets:[{label:'Change',data:rows.map(r=>+r[1].toFixed(1)),
+    backgroundColor:rows.map(r=>/wait list/.test(r[0])?(r[1]>5?T.red:T.warm):(r[1]>=0?T.teal:T.navy)),barThickness:14,borderRadius:2}]},
+    options:opts(deepMerge(hbar({min:-25,max:25,ticks:{callback:v=>v+'%',color:T.muted}}),{plugins:{legend:{display:false},valueLabels:{enabled:true,fmt:v=>(v>0?'+':'')+v.toFixed(0)+'%'},tooltip:{callbacks:{label:c=>`${c.parsed.x>0?'+':''}${c.parsed.x}%`}}},scales:{y:{ticks:{color:T.slate,font:{size:11.5}}}}}))});
+}
+function chartIndex(){
+  const cols=[T.navy,T.blue,T.gold,T.teal,T.red,T.soft];
+  const list=Object.values(SVC);
+  const ds=list.map((s,i)=>({label:s.name,data:s.q.map(v=>+(v/s.q[0]*100).toFixed(1)),borderColor:cols[i],backgroundColor:cols[i],tension:.3,pointRadius:3,pointHoverRadius:5,borderWidth:2.4}));
+  make('cIndex',{type:'line',data:{labels:Q.map(q=>'FY26 '+q),datasets:ds},options:opts({interaction:{mode:'index',intersect:false},plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y} (avg ${fmtN(list[c.datasetIndex].q[c.dataIndex])})`}}},
+    scales:{y:{min:50,max:110}}})});
+}
+
+/* ---------------- ACCESS ---------------- */
+function chartContacts(){
+  const ch=[['Calls',[5399,5402,5516],T.navy],['Web intakes',[2082,2098,1888],T.blue],['Emails',[97,170,155],T.gold],['APS referrals',[null,81,116],T.teal],['Memory clinic referrals',[5,9,7],T.soft],['Walk-ins',[5,5,7],T.warm]];
+  make('cContacts',{type:'bar',data:{labels:M3,datasets:ch.map((c,i)=>({label:c[0],data:c[1],backgroundColor:c[2],maxBarThickness:64,stack:'s',labelColor:i===0?T.inNavy:'#fff'}))},
+    options:opts({plugins:{valueLabels:{enabled:true,inside:true},tooltip:{mode:'index',callbacks:{footer:items=>'Total: '+fmtN(items.reduce((a,i)=>a+(i.parsed.y||0),0))}}},
+      scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}}})});
+}
+function chartCallback(){
+  make('cCallback',{type:'bar',data:{labels:Q.map(q=>'FY26 '+q),datasets:[
+    {type:'bar',label:'Team 1',data:[3.52,1.55,3.08,5.83],backgroundColor:T.navy,borderRadius:2},
+    {type:'bar',label:'Team 2',data:[6.73,2.29,3.08,5.92],backgroundColor:T.blue,borderRadius:2},
+    {type:'bar',label:'Team 3',data:[2.67,1.22,2.83,5.92],backgroundColor:T.soft,borderRadius:2},
+    {type:'line',label:'2-day standard',data:[2,2,2,2],borderColor:T.red,borderWidth:2,pointRadius:0,borderDash:[6,4]}]},
+    options:opts({plugins:{valueLabels:{enabled:true,fmt:v=>v.toFixed(1)}},scales:{y:{beginAtZero:true,max:8,title:{display:true,text:'Days',color:T.muted}}}})});
+}
+function chartChannel(){
+  make('cChannel',{type:'bar',data:{labels:Q.map(q=>'FY26 '+q),datasets:[
+    {type:'bar',label:'Calls, Team 1',data:[4000,3005,2550,2805],backgroundColor:T.navy,stack:'c',labelColor:T.inNavy},
+    {type:'bar',label:'Calls, Team 2',data:[3877,3339,4465,3896],backgroundColor:T.blue,stack:'c'},
+    {type:'bar',label:'Calls, Team 3',data:[2279,1583,1245,1548],backgroundColor:T.soft,stack:'c'},
+    {type:'line',label:'Web intakes',data:[1543,1259,1683,1916],borderColor:T.gold,backgroundColor:T.gold,borderWidth:3,pointRadius:5,tension:.3,yAxisID:'y1'}]},
+    options:opts({plugins:{valueLabels:{enabled:true,inside:true},tooltip:{mode:'index'}},
+      scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,title:{display:true,text:'Calls per month',color:T.muted}},
+        y1:{position:'right',beginAtZero:true,max:2500,grid:{display:false},ticks:{color:T.muted},title:{display:true,text:'Web intakes per month',color:T.muted}}}})});
+}
+
+/* ---------------- PROGRAMS ---------------- */
+function chartWeb(){
+  const pace=Math.round(131189/12);
+  make('cWeb',{type:'bar',data:{labels:M3,datasets:[
+    {type:'bar',label:'Visits',data:[10467,10451,11020],backgroundColor:[T.warm,T.navy,T.navy],maxBarThickness:56,borderRadius:2,labelColor:T.inNavy},
+    {type:'line',label:'Monthly pace required (FY27)',data:[null,pace,pace],borderColor:T.red,borderWidth:2,borderDash:[6,4],pointRadius:0}]},
+    options:opts({plugins:{valueLabels:{enabled:true,inside:true}},scales:{y:{min:8000,max:12000}}})});
+}
+function chartCare(){
+  make('cCare',{type:'bar',data:{labels:M3,datasets:[
+    {type:'bar',label:'New cases',data:[11,15,14],backgroundColor:T.navy,borderRadius:2},
+    {type:'bar',label:'Discharges',data:[11,12,6],backgroundColor:[T.soft,T.soft,T.red],borderRadius:2},
+    {type:'line',label:'Total clients served',data:[120,124,126],borderColor:T.gold,backgroundColor:T.gold,yAxisID:'y1',pointRadius:4,borderWidth:2.4,tension:.3}]},
+    options:opts({plugins:{valueLabels:{enabled:true}},scales:{y:{beginAtZero:true,max:20},y1:{position:'right',min:100,max:135,grid:{display:false},ticks:{color:T.muted}}}})});
+}
+function chartTrans(){
+  make('cTrans',{type:'bar',data:{labels:M3,datasets:[
+    {type:'bar',label:'New MFP transitions',data:[6,3,8],backgroundColor:T.navy,stack:'t',labelColor:T.inNavy},
+    {type:'bar',label:'New NHT transitions',data:[0,2,3],backgroundColor:T.teal,stack:'t'},
+    {type:'line',label:'MDS options counseling referrals',data:[57,61,63],borderColor:T.gold,backgroundColor:T.gold,yAxisID:'y1',pointRadius:4,borderWidth:2.4,tension:.3}]},
+    options:opts({plugins:{valueLabels:{enabled:true,inside:true}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:14},y1:{position:'right',min:0,max:80,grid:{display:false},ticks:{color:T.muted}}}})});
+}
+function chartOutreach(){
+  make('cOutreach',{type:'bar',data:{labels:['Jul 2026','Aug 2026'],datasets:[
+    {label:'Events supported by volunteers',data:[3,8],backgroundColor:T.gold,borderRadius:2},
+    {label:'Events supported by staff',data:[3,2],backgroundColor:T.soft,borderRadius:2},
+    {label:'Presentations delivered by staff',data:[3,7],backgroundColor:T.navy,borderRadius:2}]},
+    options:opts({plugins:{valueLabels:{enabled:true}},scales:{y:{beginAtZero:true,max:10}}})});
+}
+let ebpView='total';
+function chartEbp(){
+  const rows=[['Tai Chi for Arthritis',13,-43.48],['Bingocize',13,116.67],['A Matter of Balance',11,22.22],['Chronic Disease Self-Mgmt',6,20],['Powerful Tools for Caregivers',5,66.67],['Diabetes Self-Mgmt',1,-50],['Chronic Pain Self-Mgmt',0,-100]];
+  const yoy=ebpView==='yoy';
+  make('cEbp',{type:'bar',data:{labels:rows.map(r=>r[0]),datasets:[{label:yoy?'Change vs. FY2025':'Workshops completed',data:rows.map(r=>yoy?r[2]:r[1]),
+    backgroundColor:rows.map(r=>yoy?(r[2]>=0?T.teal:T.red):T.navy),barThickness:16,borderRadius:2}]},
+    options:opts(deepMerge(hbar(yoy?{min:-130,max:150,ticks:{callback:v=>v+'%',color:T.muted}}:{min:0,max:16}),{plugins:{legend:{display:false},valueLabels:{enabled:true,fmt:v=>yoy?(v>0?'+':'')+v.toFixed(0)+'%':v},
+      tooltip:{callbacks:{label:c=>yoy?`${c.parsed.x>0?'+':''}${c.parsed.x}% (FY26 total ${rows[c.dataIndex][1]})`:`${c.parsed.x} workshops`}}}}))});
+}
+function chartRef(){
+  const rows=[['Legal services cases',421,32.81],['Culturally appropriate I&R',564,13.94],['UniteUs referrals',1869,-9.23],['Memory Assessment Clinic',139,-36.53]];
+  make('cRef',{type:'bar',data:{labels:rows.map(r=>r[0]),datasets:[{label:'Change vs. FY2025',data:rows.map(r=>r[2]),backgroundColor:rows.map(r=>r[2]>=0?T.teal:T.red),barThickness:22,borderRadius:2}]},
+    options:opts(deepMerge(hbar({min:-75,max:75,ticks:{callback:v=>v+'%',color:T.muted}}),{plugins:{legend:{display:false},valueLabels:{enabled:true,fmt:(v,d,j)=>`${v>0?'+':''}${v.toFixed(0)}% (${fmtN(rows[j][1])})`},
+      tooltip:{callbacks:{label:c=>`${c.parsed.x}% change; FY26 total ${fmtN(rows[c.dataIndex][1])}`}}}}))});
+}
+
+/* ---------------- FY26 ---------------- */
+function chartYoy(){
+  const small=$('#smallBase').checked,g=$('#yoyGroup').value;
+  const rows=YOY.filter(r=>(small||r[2]>=60)&&(g==='all'||r[1]===g)).sort((a,b)=>b[3]-a[3]);
+  $('#yoyBox').style.height=Math.max(220,rows.length*24+40)+'px';
+  make('cYoy',{type:'bar',data:{labels:rows.map(r=>r[0]),datasets:[{label:'Change',data:rows.map(r=>r[3]),backgroundColor:rows.map(r=>r[3]>=0?T.teal:T.navy),barThickness:14,borderRadius:2}]},
+    options:opts(deepMerge(hbar({min:small?-130:-50,max:small?140:60,ticks:{callback:v=>v+'%',color:T.muted}}),{plugins:{legend:{display:false},valueLabels:{enabled:true,fmt:v=>(v>0?'+':'')+v.toFixed(1)+'%'},
+      tooltip:{callbacks:{label:c=>{const r=rows[c.dataIndex];return `${r[3]>0?'+':''}${r[3]}%; FY26 total ${fmtN(r[2])} (${r[1]})`;}}}},scales:{y:{ticks:{color:T.slate,font:{size:11.5}}}}}))});
+}
+function chartExp(){
+  const k=$('#expSel').value,d=EXP[k];const hi=Math.max(...d.q),lo=Math.min(...d.q);
+  const iHi=d.q.indexOf(hi),iLo=d.q.indexOf(lo);
+  $('#expTake').innerHTML=`<b>${k} peaked in ${Q[iHi]} and bottomed in ${Q[iLo]}</b> \u2014 a ${pct(hi,lo).toFixed(0)}% spread between the high and low quarter.`;
+  $('#expSrc').textContent='Source: FY2026 Program Trends; '+d.src+'.';
+  make('cExp',{type:'bar',data:{labels:Q.map(q=>'FY26 '+q),datasets:[{label:k,data:d.q,backgroundColor:d.q.map((v,i)=>i===iHi?T.blue:i===iLo?T.warm:T.navy),maxBarThickness:70,borderRadius:2,labelColor:T.inNavy}]},
+    options:opts({plugins:{legend:{display:false},valueLabels:{enabled:true}},scales:{y:{beginAtZero:true}}})});
+}
+
+/* ---------------- CONTRACTS ---------------- */
+const PIPE_COL=()=>({'Out for signature':T.warm,'Pending ARC approval':T.gold,'Action needed':T.red,'Executed, PO pending':T.blue,'Executed, PO released':T.navy});
+let pipeFilter='all';
+function chartPipe(){
+  const col=PIPE_COL();
+  const ds=PIPE_ORDER.map(s=>({label:s,data:[CONTRACTS.filter(c=>c[2]===s).length],backgroundColor:col[s],stack:'p',barThickness:34,labelColor:s==='Executed, PO released'?T.inNavy:(s==='Out for signature'||s==='Pending ARC approval'?'#1c1304':'#fff')}));
+  make('cPipe',{type:'bar',data:{labels:['OAA FY27'],datasets:ds},options:opts({indexAxis:'y',
+    onClick:(e,els)=>{if(els.length)setPipe(PIPE_ORDER[els[0].datasetIndex]);},
+    plugins:{legend:{position:'bottom'},valueLabels:{enabled:true,inside:true},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.x}`}}},
+    scales:{x:{stacked:true,max:17,display:false},y:{stacked:true,display:false}}})});
+}
+function setPipe(f){pipeFilter=f;[...$('#pipeSeg').children].forEach(b=>b.classList.toggle('on',b.dataset.f===f));renderPipeTable();}
+function renderPipeSeg(){
+  const n=s=>CONTRACTS.filter(c=>c[2]===s).length;
+  $('#pipeSeg').innerHTML=`<button class="pill on" data-f="all">All (17)</button>`+PIPE_ORDER.map(s=>`<button class="pill" data-f="${s}">${s} (${n(s)})</button>`).join('');
+  $('#pipeSeg').onclick=e=>{const b=e.target.closest('button');if(b)setPipe(b.dataset.f);};
+}
+function renderPipeTable(){
+  const col=PIPE_COL();
+  const rows=CONTRACTS.filter(c=>pipeFilter==='all'||c[2]===pipeFilter).sort((a,b)=>PIPE_ORDER.indexOf(a[2])-PIPE_ORDER.indexOf(b[2])||a[0].localeCompare(b[0]));
+  $('#pipeTable').innerHTML=`<thead><tr><th>Provider</th><th>Contract</th><th>Status</th><th>Detail</th></tr></thead><tbody>`+
+    rows.map(c=>`<tr><td>${c[0]}</td><td class="mono" style="font-size:12px">${c[1]}</td><td><span class="flagtag" style="border:1px solid ${col[c[2]]};color:var(--ink)"><svg width="9" height="9" aria-hidden="true"><rect width="9" height="9" fill="${col[c[2]]}"/></svg>${c[2]}</span></td><td>${c[3]||'\u2014'}</td></tr>`).join('')+'</tbody>';
+}
+function chartAging(){
+  const rows=AGING.slice().sort((a,b)=>b[1]-a[1]);
+  make('cAging',{type:'bar',data:{labels:rows.map(r=>r[0]),datasets:[{label:'Days open',data:rows.map(r=>r[1]),
+    backgroundColor:rows.map(r=>r[2]==='crit'?T.red:r[1]>30?T.navy:(r[2]==='ext'?T.warm:T.soft)),barThickness:15,borderRadius:2}]},
+    options:opts(deepMerge(hbar({max:100,title:{display:true,text:'Days',color:T.muted}}),{plugins:{legend:{display:false},valueLabels:{enabled:true,fmt:v=>v+'d'},
+      tooltip:{callbacks:{label:c=>`${c.parsed.x} days open${rows[c.dataIndex][2]==='ext'?' (awaiting external party)':''}`}}},scales:{y:{ticks:{color:T.slate,font:{size:11.5}}}}}))});
+}
+function chartApprover(){
+  make('cApprover',{type:'bar',data:{labels:APPROVER.map(a=>a[0]),datasets:[{label:'Open items',data:APPROVER.map(a=>a[1]),
+    backgroundColor:APPROVER.map(a=>a[0]==='Rhea'?T.gold:a[0]==='External parties'?T.warm:T.navy),barThickness:22,borderRadius:2}]},
+    options:opts(deepMerge(hbar({max:18}),{plugins:{legend:{display:false},valueLabels:{enabled:true}}}))});
+}
+let tlFilter='all';
+function renderTimeline(){
+  const units=['all','Access','HCBS','SPQ','Program Dev.','Contracts'];
+  $('#tlSeg').innerHTML=units.map(u=>`<button class="pill${u===tlFilter?' on':''}" data-u="${u}">${u==='all'?'All units':u}</button>`).join('');
+  $('#tlSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;tlFilter=b.dataset.u;renderTimeline();};
+  const rows=TL.filter(t=>tlFilter==='all'||t[2].includes(tlFilter));
+  $('#timeline').innerHTML=rows.map(t=>{const d=new Date(t[0]+'T12:00:00');return `<li><time datetime="${t[0]}">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</time><span>${t[1]}</span><span class="u">${t[2]}</span></li>`;}).join('');
+}
+
+/* ---------------- TABS & INIT ---------------- */
+const builders={
+  summary:()=>{chartFunds();chartFy26();},
+  services:()=>{chartSvc();chartClear();chartSvcChange();chartIndex();},
+  access:()=>{chartContacts();chartCallback();chartChannel();},
+  programs:()=>{chartWeb();chartCare();chartTrans();chartOutreach();chartEbp();chartRef();},
+  fy26:()=>{chartYoy();chartExp();},
+  contracts:()=>{chartPipe();chartAging();chartApprover();},
+  notes:()=>{}
+};
+const built={};let current='summary';
+function show(tab){
+  current=tab;
+  document.querySelectorAll('#tabChips .chip').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
+  document.querySelectorAll('.tabpane').forEach(s=>s.classList.toggle('on',s.id==='tab-'+tab));
+  if(!built[tab]){builders[tab]();built[tab]=true;}
+}
+function applyDefaults(){Chart.defaults.font.family="'IBM Plex Sans', sans-serif";Chart.defaults.font.size=12;Chart.defaults.color=T.slate;}
+function rebuildAll(){
+  readTheme();applyDefaults();
+  renderDPM(document.querySelector('#dpmFilter .pill.on').dataset.f);renderPipeTable();
+  Object.keys(built).forEach(k=>delete built[k]);Object.keys(charts).forEach(k=>{charts[k].destroy();delete charts[k];});
+  show(current);
+}
+function init(){
+  let saved=null;try{saved=localStorage.getItem('ais-theme');}catch(e){}
+  if(saved)document.documentElement.setAttribute('data-theme',saved);
+  readTheme();
+  renderKpis();renderFindings();renderDPM('all');buildSvcSeg();renderPipeSeg();renderPipeTable();renderTimeline();
+  if(typeof Chart==='undefined'){document.querySelector('#tab-summary').insertAdjacentHTML('afterbegin','<div class="takeaway"><b>Charts could not load.</b> The charting library was blocked; reload the page to try again.</div>');return;}
+  Chart.register(valueLabels);applyDefaults();
+  Object.keys(EXP).forEach(k=>$('#expSel').insertAdjacentHTML('beforeend',`<option>${k}</option>`));
+  $('#expSel').value='Respite care hours';
+  document.querySelectorAll('#tabChips .chip').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.tab);}));
+  $('#dpmFilter').onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$('#dpmFilter').children].forEach(x=>x.classList.toggle('on',x===b));renderDPM(b.dataset.f);};
+  $('#ebpSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;ebpView=b.dataset.v;[...$('#ebpSeg').children].forEach(x=>x.classList.toggle('on',x===b));chartEbp();};
+  $('#smallBase').onchange=chartYoy;$('#yoyGroup').onchange=chartYoy;$('#expSel').onchange=chartExp;
+  $('#themeBtn').onclick=()=>{const next=T.dark?'light':'dark';document.documentElement.setAttribute('data-theme',next);try{localStorage.setItem('ais-theme',next);}catch(e){}renderKpis();renderFindings();rebuildAll();};
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{renderKpis();rebuildAll();});
+  show('summary');
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+
+})();
+</script>
+</body>
+</html>
